@@ -1,0 +1,46 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.elasticsearch.gradle:build-tools:7.6.1'
+    }
+}
+
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'elasticsearch.testclusters'
+apply plugin: 'elasticsearch.esplugin'
+
+eclipse {
+  jdt {
+    sourceCompatibility = 11
+    targetCompatibility = 11
+    javaRuntimeName = "OpenJDK 11.0.1"
+  }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+group = 'org.intrahealth'
+version = '0.0.1-es7.6.1-SNAPSHOT'
+
+esplugin {
+    name 'string-similarity-scoring'
+    description 'A script engine to use string similarity algorithms for scoring documents'
+    classname 'org.plugin.similarity.script.SimilarityScoringPlugin'
+    licenseFile=rootProject.file('LICENSE.txt')
+    noticeFile=rootProject.file('NOTICE.txt')
+}
+
+test.enabled = false
+dependencyLicenses.enabled = false
+loggerUsageCheck.enabled = false //disable because only works with java 1.8 and below
+
+dependencies {
+    compile 'info.debatty:java-string-similarity:1.2.1'
+}

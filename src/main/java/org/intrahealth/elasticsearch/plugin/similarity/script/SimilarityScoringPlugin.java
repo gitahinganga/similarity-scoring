@@ -88,7 +88,7 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
         SimilarityLeafFactory(Map<String, Object> params, SearchLookup lookup) {
             if (params.containsKey("matchers") == false) {
-                throw new IllegalArgumentException("Missing parameter [fields]");
+                throw new IllegalArgumentException("Missing parameter [matchers]");
             }
             this.params = params;
             this.matchers = MatcherModelParser.parseMatcherModels(params);
@@ -109,7 +109,7 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
                 public double execute(ExplanationHolder explanation) {
                     double totalScore = NOT_SCORED;
                     for (MatcherModel matcherModel : matchers) {
-                        String value = (String) lookup.source().get(matcherModel.fieldName);
+                        String value = String.valueOf(lookup.source().get(matcherModel.fieldName));
                         double score = matcherService.matchScore(matcherModel.matcherName, matcherModel.value, value);
                         if (score > matcherModel.high) {
                             score = matcherModel.high;
@@ -147,7 +147,7 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
         MatcherModel(String fieldName, Object value, String matcherName, double high, double low) {
             this.fieldName = fieldName;
-            this.value = (String) value;
+            this.value = String.valueOf(value);
             this.matcherName = matcherName;
             this.high = high;
             this.low = low;
@@ -172,14 +172,33 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
             List<MatcherModel> matcherModels = new ArrayList<>();
             List<Map<String, Object>> script = (List<Map<String, Object>>) params.get("matchers");
             script.forEach(entry -> {
-                String fieldName = (String) entry.get(FIELD);
-                String value = (String) entry.get(VALUE);
-                String matcherName = (String) entry.get(MATCHER);
+                checkMatcherConfiguration(entry);
+                String fieldName = String.valueOf(entry.get(FIELD));
+                String value = String.valueOf(entry.get(VALUE));
+                String matcherName = String.valueOf(entry.get(MATCHER));
                 double high = (double) entry.get(HIGH);
                 double low = (double) entry.get(LOW);
                 matcherModels.add(new MatcherModel(fieldName, value, matcherName, high, low));
             });
             return matcherModels;
+        }
+
+        private static void checkMatcherConfiguration(Map<String, Object> entry) {
+            if (!entry.containsKey(FIELD)) {
+                throw new IllegalArgumentException("Invalid matcher configuration. Missing: [" + FIELD + "] property.");
+            }
+            if (!entry.containsKey(VALUE)) {
+                throw new IllegalArgumentException("Invalid matcher configuration. Missing: [" + VALUE + "] property.");
+            }
+            if (!entry.containsKey(MATCHER)) {
+                throw new IllegalArgumentException("Invalid matcher configuration. Missing: [" + MATCHER + "] property.");
+            }
+            if (!entry.containsKey(HIGH)) {
+                throw new IllegalArgumentException("Invalid matcher configuration. Missing: [" + HIGH + "] property.");
+            }
+            if (!entry.containsKey(LOW)) {
+                throw new IllegalArgumentException("Invalid matcher configuration. Missing: [" + LOW + "] property.");
+            }
         }
 
     }

@@ -30,7 +30,7 @@ public class MatcherService {
 
     public double matchScore(String matcherName, String left, String right) {
         NormalizedStringSimilarity matcher = getMatcher(matcherName); 
-        return matcher.similarity(left, right);
+        return matcher.similarity(left.trim().toLowerCase(), right.trim().toLowerCase());
     }
 
 
@@ -65,8 +65,6 @@ public class MatcherService {
     }
 
     private static class NormalizedLongestCommonSubsequenceSimilarity implements NormalizedStringSimilarity {
-
-        private static final long serialVersionUID = -4193799401678247955L;
 
         LongestCommonSubsequence lcs = new LongestCommonSubsequence();
 

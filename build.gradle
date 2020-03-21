@@ -32,7 +32,7 @@ version = '0.0.1-es7.6.1-SNAPSHOT'
 esplugin {
     name 'string-similarity-scoring'
     description 'A script engine to use string similarity algorithms for scoring documents'
-    classname 'org.plugin.similarity.script.SimilarityScoringPlugin'
+    classname 'org.intrahealth.elasticsearch.plugin.similarity.script.SimilarityScoringPlugin'
     licenseFile=rootProject.file('LICENSE.txt')
     noticeFile=rootProject.file('NOTICE.txt')
 }

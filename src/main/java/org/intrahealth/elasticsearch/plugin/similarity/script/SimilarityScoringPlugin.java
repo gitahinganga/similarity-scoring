@@ -13,13 +13,6 @@
  */
 package org.intrahealth.elasticsearch.plugin.similarity.script;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugins.Plugin;
@@ -32,26 +25,59 @@ import org.elasticsearch.script.ScriptFactory;
 import org.elasticsearch.search.lookup.SearchLookup;
 import org.intrahealth.elasticsearch.plugin.similarity.MatcherService;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Main plugin implementation and configuration.
+ */
 public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
+    /**
+     * Returns a {@link ScriptEngine} instance.
+     *
+     * @param settings Node settings
+     * @param contexts The contexts that {@link ScriptEngine#compile(String, String, ScriptContext, Map)} may be called with
+     */
     @Override
     public ScriptEngine getScriptEngine(Settings settings, Collection<ScriptContext<?>> contexts) {
         return new SimilarityScriptEngine();
     }
 
+    /**
+     * Custom {@link ScriptEngine} implementation for string similarity.
+     */
     private static class SimilarityScriptEngine implements ScriptEngine {
 
+        /**
+         * The language name used in the script APIs to refer to this scripting backend.
+         */
         @Override
         public String getType() {
             return "similarity_scripts";
         }
 
+        /**
+         * Compiles the script.
+         *
+         * @param scriptName   the name of the script. {@code null} if it is anonymous (inline). For a stored script, its the
+         *                     identifier.
+         * @param scriptSource actual source of the script
+         * @param context      the context this script will be used for
+         * @param params       compile-time parameters (such as flags to the compiler)
+         *
+         * @return A compiled script of the FactoryType from {@link ScriptContext}
+         */
         @Override
         public <FactoryType> FactoryType compile(
-            String scriptName,
-            String scriptSource,
-            ScriptContext<FactoryType> context,
-            Map<String, String> params
+                String scriptName,
+                String scriptSource,
+                ScriptContext<FactoryType> context,
+                Map<String, String> params
         ) {
             if (context.equals(ScoreScript.CONTEXT) == false) {
                 throw new IllegalArgumentException(getType() + " scripts cannot be used for context [" + context.name + "]");
@@ -63,6 +89,9 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
             throw new IllegalArgumentException("Unknown script name " + scriptSource);
         }
 
+        /**
+         * Script {@link ScriptContext}s supported by this engine.
+         */
         @Override
         public Set<ScriptContext<?>> getSupportedContexts() {
             return Set.of(ScoreScript.CONTEXT);
@@ -70,8 +99,14 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
     }
 
+    /**
+     * A factory to construct an instance of {@link SimilarityLeafFactory}.
+     */
     private static class SimilarityFactory implements ScoreScript.Factory, ScriptFactory {
 
+        /**
+         * @return a new instance of {@link SimilarityLeafFactory}.
+         */
         @Override
         public LeafFactory newFactory(Map<String, Object> params, SearchLookup lookup) {
             return new SimilarityLeafFactory(params, lookup);
@@ -79,6 +114,9 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
     }
 
+    /**
+     * A factory to construct new {@link ScoreScript} instances.
+     */
     private static class SimilarityLeafFactory implements LeafFactory {
 
         private final MatcherService matcherService = new MatcherService();
@@ -118,7 +156,8 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
                             score = matcherModel.low;
                         }
                         totalScore = totalScore == NOT_SCORED ? score : combineScores(totalScore, score);
-                    };
+                    }
+                    ;
                     return totalScore;
                 }
 
@@ -137,14 +176,39 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
     }
 
+    /**
+     * Encapsulates a field with its value, preferred matcher and the high and low values to be used for scoring.
+     */
     private static class MatcherModel {
 
+        /**
+         * The name of the field to be matched.
+         */
         private String fieldName;
+
+        /**
+         * The value of the field to be matched.
+         */
         private String value;
+
+        /**
+         * The name of the matcher to use for matching.
+         */
         private String matcherName;
+
+        /**
+         * The score to assign a perfect match. Should be high, non-zero and between 0 and 1.
+         */
         private double high;
+
+        /**
+         * The score to assign a perfect match. Should be low, non-zero and between 0 and 1.
+         */
         private double low;
 
+        /**
+         * Constructs a new instance of a MatcherModel.
+         */
         MatcherModel(String fieldName, Object value, String matcherName, double high, double low) {
             this.fieldName = fieldName;
             this.value = String.valueOf(value);
@@ -157,7 +221,6 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
 
     /**
      * Converts each matcher entry from the script to a {@link MatcherModel}.
-     *
      */
     private static class MatcherModelParser {
 
@@ -202,5 +265,4 @@ public class SimilarityScoringPlugin extends Plugin implements ScriptPlugin {
         }
 
     }
-
 }

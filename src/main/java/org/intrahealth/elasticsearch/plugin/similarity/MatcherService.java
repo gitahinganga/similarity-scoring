@@ -13,10 +13,6 @@
  */
 package org.intrahealth.elasticsearch.plugin.similarity;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 import info.debatty.java.stringsimilarity.Cosine;
 import info.debatty.java.stringsimilarity.Jaccard;
 import info.debatty.java.stringsimilarity.JaroWinkler;
@@ -25,16 +21,40 @@ import info.debatty.java.stringsimilarity.NormalizedLevenshtein;
 import info.debatty.java.stringsimilarity.SorensenDice;
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * This class serves as the interface to the string similarity library which provides the string similarity
+ * algorithms used by the plugin.
+ */
 public class MatcherService {
 
+    /**
+     * A cache for any matchers that we've already loaded so that we do not need to load them each time.
+     */
     private Map<String, NormalizedStringSimilarity> matchers = new HashMap<>();
 
+    /**
+     * Select the right matcher by its name, match the two strings provided and then return the match score. Passing
+     * a name for which a matcher does not exist will result in an {@link IllegalArgumentException}.
+     *
+     * @param matcherName the name of the matcher to use. See @{@link NormalizedStringSimilarity}.
+     * @param left        the first of the two strings to match.
+     * @param right       the second of the two strings to match.
+     *
+     * @return the match score.
+     */
     public double matchScore(String matcherName, String left, String right) {
-        NormalizedStringSimilarity matcher = getMatcher(matcherName); 
+        NormalizedStringSimilarity matcher = getMatcher(matcherName);
         return matcher.similarity(left.trim().toLowerCase(Locale.getDefault()), right.trim().toLowerCase(Locale.getDefault()));
     }
 
-
+    /*
+     * Get a matcher by its name from the cache. If the matcher is not already in the cache, load it, place it in the
+     * cache and then return it.
+     */
     private NormalizedStringSimilarity getMatcher(String matcherName) {
         if (matchers.containsKey(matcherName)) {
             return matchers.get(matcherName);
@@ -59,12 +79,16 @@ public class MatcherService {
                 matchers.put(matcherName, new NormalizedLongestCommonSubsequenceSimilarity());
                 break;
             default:
-                throw new IllegalArgumentException("The matcher ["+ matcherName +"] is not supported.");
+                throw new IllegalArgumentException("The matcher [" + matcherName + "] is not supported.");
         }
 
         return matchers.get(matcherName);
     }
 
+    /*
+     * This class exists to "flip" the result returned by the @{@link LongestCommonSubsequence} since it returns the
+     * distance rather than then similarity between the two input strings.
+     */
     private static class NormalizedLongestCommonSubsequenceSimilarity implements NormalizedStringSimilarity {
 
         LongestCommonSubsequence lcs = new LongestCommonSubsequence();
